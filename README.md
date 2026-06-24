@@ -17,7 +17,7 @@
 
 This lab replicates the core infrastructure stack found in small-to-medium enterprise environments. Using **VMware Workstation Pro** as the hypervisor, a fully functional domain environment was built from scratch — covering Windows Server services, client domain integration, and a hardened Linux server communicating within the same network.
 
-> 💡 *Every service was configured manually through GUI and PowerShell — no pre-built templates or snapshots. The goal was to understand how each component works and how they interact in a real enterprise environment.*
+> 💡 *Every service was configured manually through GUI and PowerShell. The goal was to understand how each component works and how they interact in a real enterprise environment.*
 
 ---
 
@@ -73,7 +73,6 @@ Deployed and configured a Windows Server 2022 Domain Controller from scratch.
 - Promoted server to Domain Controller
 - Created a new AD forest and domain
 - Configured domain functional level
-- Verified replication and SYSVOL health via `dcdiag` and `repadmin`
 
 ---
 
@@ -125,11 +124,11 @@ Set up centralised DHCP services on Windows Server to automate IP address manage
 
 | Configuration | Detail |
 |---|---|
-| Scope | `192.168.10.0/24` |
-| Default Gateway | `192.168.10.1` |
+| Scope | `192.168.100.0/24` |
+| Default Gateway | `192.168.100.1` |
 | DNS Server | Domain Controller IP |
 | Lease Duration | 8 hours |
-| Exclusion Range | `192.168.10.1 – 192.168.10.20` (static devices) |
+| Exclusion Range | `192.168.100.1 – 192.168.100.20` (static devices) |
 
 - Created DHCP scope with exclusions for static infrastructure
 - Configured DHCP reservations for servers and printers by MAC address
@@ -140,20 +139,13 @@ Set up centralised DHCP services on Windows Server to automate IP address manage
 
 ### 5. 📋 Group Policy Objects (GPO)
 
-Created and linked GPOs to enforce security and configuration standards across the domain.
+Created and linked security-focused GPOs for domain users and computers.
 
-| GPO Name | Scope | Purpose |
-|----------|-------|---------|
-| Password Policy | Domain | Enforce complexity, length, and expiry |
-| Desktop Wallpaper | All Users OU | Standardise corporate wallpaper |
-| USB Drive Restriction | IT Dept OU | Block removable storage |
-| Software Restriction | Finance OU | Limit application execution |
-| Screen Lock Policy | Domain | Auto-lock after 5 minutes |
-
-- Linked GPOs at domain and OU level
-- Tested GPO application with `gpupdate /force` and `gpresult /r`
-- Verified inheritance and precedence using GPMC
-
+- Password policy enforcement
+- Security baselines
+- Controlled policy inheritance
+- OU-level targeting
+  
 ---
 
 ### 6. 💻 Domain-Joined Windows 11 Client
@@ -195,13 +187,12 @@ Hardened the Ubuntu server's SSH configuration — replacing password authentica
 - Deployed public key to `~/.ssh/authorized_keys` on Ubuntu server
 - Hardened `/etc/ssh/sshd_config`:
   ```
-  PasswordAuthentication no
   PubkeyAuthentication yes
   PermitRootLogin no
   AuthorizedKeysFile .ssh/authorized_keys
   ```
 - Restarted SSH service and verified key-based login
-- Tested that password login is correctly rejected
+- Tested that password login is correctly rejected 
 
 ---
 
@@ -211,7 +202,6 @@ Hardened the Ubuntu server's SSH configuration — replacing password authentica
 # Active Directory
 Get-ADUser -Filter * | Select Name, SamAccountName     # List all AD users
 Get-ADOrganizationalUnit -Filter *                      # List all OUs
-dcdiag /test:replications                               # Check AD replication health
 
 # DNS
 nslookup <hostname>                                     # Forward lookup test
@@ -220,8 +210,8 @@ Get-DnsServerZone                                       # List all DNS zones
 
 # DHCP
 Get-DhcpServerv4Scope                                   # View DHCP scopes
-Get-DhcpServerv4Lease -ScopeId 192.168.10.0            # View active leases
-Get-DhcpServerv4Reservation -ScopeId 192.168.10.0      # View reservations
+Get-DhcpServerv4Lease -ScopeId 192.168.100.0            # View active leases
+Get-DhcpServerv4Reservation -ScopeId 192.168.100.0      # View reservations
 
 # Group Policy
 gpupdate /force                                         # Force GPO refresh
